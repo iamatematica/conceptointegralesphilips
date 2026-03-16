@@ -1,10 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Calculator, Activity, Layers, Info, CheckCircle2, XCircle, BookOpen } from 'lucide-react';
+import { Calculator, Activity, Layers, Info, CheckCircle2, XCircle, BookOpen, Play, Pause, FastForward } from 'lucide-react';
 
 function IntegralAnimation() {
   const [n, setN] = useState(10);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speed, setSpeed] = useState(10);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setN(prev => {
+          if (prev >= 1000) {
+            setIsPlaying(false);
+            return 1000;
+          }
+          return Math.min(1000, prev + speed);
+        });
+      }, 50);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, speed]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -139,28 +157,69 @@ function IntegralAnimation() {
       </div>
       
       <div className="mt-8 w-full max-w-xl bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <div className="flex justify-between items-center mb-4">
-          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-indigo-500" />
-            Número de rectángulos (N)
-          </label>
-          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-sm font-bold">
-            {n}
-          </span>
-        </div>
-        
-        <input 
-          type="range" 
-          min="1" 
-          max="1000" 
-          value={n} 
-          onChange={(e) => setN(parseInt(e.target.value))}
-          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-        />
-        
-        <div className="mt-4 flex justify-between text-xs text-slate-500">
-          <span>Menos precisión (N=1)</span>
-          <span>Más precisión (N=1000)</span>
+        <div className="flex flex-col gap-6">
+          {/* N Slider */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-indigo-500" />
+                Número de rectángulos (N)
+              </label>
+              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-sm font-bold min-w-[60px]">
+                {n}
+              </span>
+            </div>
+            <input 
+              type="range" 
+              min="1" 
+              max="1000" 
+              value={n} 
+              onChange={(e) => {
+                setN(parseInt(e.target.value));
+                setIsPlaying(false);
+              }}
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            />
+            <div className="mt-2 flex justify-between text-xs text-slate-500">
+              <span>1</span>
+              <span>1000</span>
+            </div>
+          </div>
+
+          <hr className="border-slate-100" />
+
+          {/* Playback Controls */}
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => {
+                if (n >= 1000 && !isPlaying) setN(1);
+                setIsPlaying(!isPlaying);
+              }}
+              className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors shrink-0 ${
+                isPlaying ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+              title={isPlaying ? "Pausar" : "Reproducir"}
+            >
+              {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+            </button>
+
+            <div className="flex-1">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                  <FastForward className="w-4 h-4 text-indigo-500" />
+                  Velocidad de animación
+                </label>
+              </div>
+              <input 
+                type="range" 
+                min="1" 
+                max="50" 
+                value={speed} 
+                onChange={(e) => setSpeed(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -387,24 +446,38 @@ export default function App() {
             </p>
             
             <div className="bg-indigo-950/60 p-6 md:p-8 rounded-2xl border border-indigo-800/50 inline-block backdrop-blur-sm">
-              <div className="flex items-center gap-3 md:gap-6 text-xl md:text-3xl font-serif">
-                <div className="flex flex-col items-center justify-center text-sm md:text-base">
-                  <span>b</span>
-                  <span className="text-5xl md:text-6xl font-light italic leading-none my-1">∫</span>
-                  <span>a</span>
+              <div className="flex items-center gap-2 md:gap-4 text-xl md:text-3xl font-serif">
+                
+                {/* Integral */}
+                <div className="flex items-center">
+                  <div className="flex flex-col items-center justify-center text-sm md:text-base mr-1">
+                    <span className="translate-y-3 translate-x-2">b</span>
+                    <span className="text-5xl md:text-6xl font-light italic leading-none">∫</span>
+                    <span className="-translate-y-3 -translate-x-1">a</span>
+                  </div>
+                  <div className="ml-2">f(x) dx</div>
                 </div>
-                <div>f(x) dx</div>
+
                 <div className="mx-2 md:mx-4 font-sans font-light">=</div>
-                <div className="flex flex-col items-center justify-center text-sm md:text-base">
-                  <span>n → ∞</span>
-                  <span className="text-2xl md:text-3xl font-bold leading-none my-2">lim</span>
+                
+                {/* Limit */}
+                <div className="flex flex-col items-center justify-center">
+                  <span className="text-2xl md:text-3xl font-bold leading-none">lim</span>
+                  <span className="text-xs md:text-sm mt-1">n → ∞</span>
                 </div>
-                <div className="flex flex-col items-center justify-center text-sm md:text-base">
-                  <span>n</span>
-                  <span className="text-4xl md:text-5xl leading-none my-1">∑</span>
-                  <span>i=1</span>
+                
+                {/* Summation */}
+                <div className="flex flex-col items-center justify-center mx-2">
+                  <span className="text-xs md:text-sm translate-y-1">n</span>
+                  <span className="text-4xl md:text-5xl leading-none">∑</span>
+                  <span className="text-xs md:text-sm -translate-y-1">i=1</span>
                 </div>
-                <div>f(x_i) Δx</div>
+                
+                {/* Function */}
+                <div>
+                  f(x<sub>i</sub>) Δx
+                </div>
+
               </div>
             </div>
           </div>
